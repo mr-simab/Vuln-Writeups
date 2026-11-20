@@ -165,10 +165,6 @@ All times shown above are from the original Burp response headers on **10 August
 
 **Potential, conditional impact:** If a valid refresh token is leaked or stolen, an attacker might be able to continue obtaining new access credentials while the token remains valid. This could undermine the intended protection of one-time rotation and complicate session-reuse detection.
 
-**Not demonstrated in the source:** token theft, compromise of another user, successful replay after expiry, persistence after explicit logout or revocation, access-control bypass, or a production incident.
-
-The original report labels the issue **High** severity.
-
 ## 8. Likely cause and engineering considerations
 
 The observed pattern is **consistent with** incomplete enforcement of single-use refresh-token semantics. For example, a system may issue a new token without atomically marking the previous refresh token as consumed, or may accept any valid signed refresh JWT until expiry.
