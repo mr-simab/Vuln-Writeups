@@ -1,6 +1,6 @@
 # When a Refresh Token Can Be Used Twice: A Token-Rotation Case Study
 
-**Authentication & session management | API security | Burp Suite**
+**Authentication & session management | API security**
 
 > **Key finding:** In an authorized test of UpToSkills, a refresh token that had already been used to obtain new credentials was accepted again by the refresh endpoint. Both requests returned `HTTP 200 OK` and issued another access-token/refresh-token pair. This is a deviation from the *single-use refresh-token rotation* behavior expected in the original assessment.
 >
@@ -15,7 +15,7 @@
 | Affected API | `POST https://gateway.uptoskills.com/api/auth/refresh` |
 | Supporting endpoint | `GET https://gateway.uptoskills.com/api/profile/full` |
 | Vulnerability class | Authentication / session management / token lifecycle |
-| Suggested severity in original report | **High** (author assessment; no CVSS calculation supplied) |
+| Suggested severity in original report | **High** |
 | Testing method | Manual authenticated API testing using Burp Suite and a browser |
 | Test access | Authorized test account |
 | Date of assessment | 10 August 2026 |
@@ -167,13 +167,11 @@ All times shown above are from the original Burp response headers on **10 August
 
 **Not demonstrated in the source:** token theft, compromise of another user, successful replay after expiry, persistence after explicit logout or revocation, access-control bypass, or a production incident.
 
-The original report labels the issue **High** severity. That assessment is preserved as an author-reported severity, rather than presented as an independently calculated CVSS rating.
+The original report labels the issue **High** severity.
 
 ## 8. Likely cause and engineering considerations
 
 The observed pattern is **consistent with** incomplete enforcement of single-use refresh-token semantics. For example, a system may issue a new token without atomically marking the previous refresh token as consumed, or may accept any valid signed refresh JWT until expiry.
-
-These are **hypotheses**, not verified implementation details: the assessment provides API behavior and screenshots, not backend source code, token database state, or configuration.
 
 A secure rotation implementation must also consider concurrent refresh requests and short-lived retry races: naive reuse detection can mistakenly terminate legitimate sessions if multiple client requests refresh simultaneously.
 
