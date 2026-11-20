@@ -13,7 +13,7 @@
 | Application | UpToSkills |
 | Affected endpoint | `POST https://gateway.uptoskills.com/api/auth/forgot-password` |
 | Attack surface | Public *Forgot Password* and *Resend OTP* flow |
-| Testing date | **4 July 2026** (as stated in the report) |
+| Testing date | **4 July 2026** |
 | Tools documented | Burp Suite Community Edition v2025.10.6; terminal/cURL evidence |
 | Severity | Not assigned in the original report; impact depends on actual abuse controls |
 | Evidence status | Repeated positive API responses and multiple OTP deliveries documented; exact timer-overlap not independently timestamped |
@@ -48,8 +48,6 @@ sequenceDiagram
     Note over A: Server-side cooldown enforcement missing
 ```
 
-*Conceptual flow reconstructed from the report. It does not depict server internals that were directly inspected.*
-
 ## 3. Authorized testing setup
 
 The original assessment used the application’s password-recovery workflow, a registered test email address, Burp Suite, and repeated HTTP requests. This write-up is a **historical reconstruction**, not a claim about the present production configuration.
@@ -58,39 +56,39 @@ For safe publication, the original test mailbox, all OTP values, and nonessentia
 
 ## 4. Reproduction sequence and evidence
 
-### Step 1 — Open the login and password-recovery interface
+### Step 1 - Open the login and password-recovery interface
 
 The researcher navigated to the UpToSkills login page and selected the **Forgot Password** option.
 
 ![Original login interface showing the Forgot Password entry point](assets/01-login-and-recovery-entry.png)
 
-*Figure 1 — Login screen with the recovery entry point visible (original report, Figure 1).*
+*Figure 1 - Login screen with the recovery entry point visible (original report, Figure 1).*
 
-### Step 2 — Submit an account-controlled email address
+### Step 2 - Submit an account-controlled email address
 
 The recovery form accepted a registered email address and offered a **Send OTP** action. The screenshot below is preserved from the report, with the test email opaque-redacted.
 
 ![Sanitized Forgot Password form with the Send OTP button](assets/02-password-recovery-form.png)
 
-*Figure 2 — Password-recovery form. The tester’s email has been removed.*
+*Figure 2 - Password-recovery form. The tester’s email has been removed.*
 
-### Step 3 — Verify the initial OTP email
+### Step 3 - Verify the initial OTP email
 
 The researchers received an email titled **“Your UptoSkills Password Reset OTP”**. The email describes the code as valid for **10 minutes**, according to the screenshot. This establishes an initial functional recovery email path; it does not by itself show the resend bypass.
 
 ![Sanitized recovery email showing OTP message with code redacted](assets/03-otp-email-confirmation.png)
 
-*Figure 3 — Initial recovery OTP delivery. The actual code is covered by an opaque mask.*
+*Figure 3 - Initial recovery OTP delivery. The actual code is covered by an opaque mask.*
 
-### Step 4 — Observe the frontend cooldown
+### Step 4 - Observe the frontend cooldown
 
 After requesting an OTP, the user interface displayed the resend countdown. The screenshot records the text **“Resend OTP in 92s.”**
 
 ![Frontend shows Resend OTP in 92 seconds](assets/04-frontend-countdown.png)
 
-*Figure 4 — The application tells the user to wait before requesting another OTP.*
+*Figure 4 - The application tells the user to wait before requesting another OTP.*
 
-### Step 5 — Examine direct API behavior during repeat requests
+### Step 5 - Examine direct API behavior during repeat requests
 
 The team used direct HTTP requests to the recovery endpoint instead of clicking the disabled UI control. The terminal screenshot shows a **four-request test**, with four JSON responses reporting `"success": true` and the generic message that a reset OTP has been sent *if the account exists*.
 
@@ -115,17 +113,17 @@ The response text, as shown in the screenshot, is:
 
 ![Terminal output shows four successful generic recovery API responses](assets/05-four-backend-success-responses.png)
 
-*Figure 5 — Low-volume direct-request test and four success responses. The email address is opaque-redacted.*
+*Figure 5 - Low-volume direct-request test and four success responses. The email address is opaque-redacted.*
 
 **Interpretation:** A generic success response alone cannot prove email delivery, because this wording may be intended to prevent account enumeration. The next piece of evidence matters.
 
-### Step 6 — Correlate with delivered OTP emails
+### Step 6 - Correlate with delivered OTP emails
 
 The report includes a screenshot containing **four separate recovery email bodies**, each showing a different OTP value. The codes are fully redacted in the public copy.
 
 ![Four separate password reset emails, with all OTP codes redacted](assets/06-four-distinct-otp-emails.png)
 
-*Figure 6 — Four distinct OTP emails captured by the research team. All codes have been masked.*
+*Figure 6 - Four distinct OTP emails captured by the research team. All codes have been masked.*
 
 Taken together, the terminal output and the delivered-email screenshot support the report’s central observation: the recovery workflow could generate multiple OTP messages under the tested conditions. The written report states that this occurred while the browser still showed the cooldown.
 
@@ -155,8 +153,6 @@ Taken together, the terminal output and the delivered-email screenshot support t
 - **Infrastructure overhead:** repeated OTP generation, delivery, and logging can consume email and application resources.
 - **Recovery-process interference:** successive codes may create confusion or invalidate previous codes, depending on backend logic (not tested here).
 - **Availability impact:** sustained high-volume misuse might affect recovery service quality, but **no denial of service was demonstrated**.
-
-This is **not** evidence of OTP brute-force verification, password-reset account takeover, credential disclosure, or successful login without a password.
 
 ## 7. Root-cause assessment
 
@@ -197,6 +193,5 @@ The evidence in this report also illustrates an important testing discipline: *d
 
 The historical assessment documents four successful recovery API responses and four distinct OTP emails, while also showing a frontend resend countdown. These observations support the researchers’ finding that OTP resend controls were not sufficiently enforced at the server boundary under the tested conditions.
 
-The report does **not** establish sustained OTP flooding, service outage, or account compromise. Its strongest contribution is the practical demonstration of how a client-side cooldown and direct API behavior can diverge.
 
 ---
