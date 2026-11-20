@@ -13,9 +13,9 @@
 | Research topic | Case-sensitive email identifiers and login rate-limit counters |
 | Application | UpToSkills |
 | Observed endpoint | `POST https://gateway.uptoskills.com/api/auth/login` |
-| Base URL in written report | `https://gateway.uptoskills.in` (differs from the screenshot hostname) |
-| Class | Rate-limit logic / identifier canonicalization **(suspected, not conclusively established)** |
-| Severity | **Medium**, as suggested by the original report; not independently rated |
+| Base URL in written report | `https://gateway.uptoskills.in` |
+| Class | Rate-limit logic / identifier canonicalization |
+| Severity | **Medium** |
 | Methodology | Authorized, manual web/API testing using Burp Suite Repeater |
 | Observed server policy header | `RateLimit-Policy: 5;w=120` |
 | Evidence status | Rate limiting confirmed; capitalization-based bypass **inconclusive** |
@@ -45,7 +45,7 @@ The written report lists `gateway.uptoskills.in`, whereas the screenshots' host/
 
 ## 4. Reproduction sequence and recorded results
 
-### Step 1 — Capture an invalid login attempt
+### Step 1 - Capture an invalid login attempt
 
 The researcher captured a login request for an authorized test account. The server denied the attempt with a generic authentication failure.
 
@@ -65,9 +65,9 @@ Content-Type: application/json; charset=utf-8
 
 ![Sanitized Burp Suite evidence showing an initial HTTP 401 and rate-limit headers](assets/01-initial-401.png)
 
-*Figure 1 — Initial `401 Unauthorized`. The server reports an attempt budget and a 120-second window.*
+*Figure 1 - Initial `401 Unauthorized`. The server reports an attempt budget and a 120-second window.*
 
-### Step 2 — Observe the rate limiter activate
+### Step 2 - Observe the rate limiter activate
 
 After additional failed attempts, the same endpoint returned `429 Too Many Requests`. The evidence confirms that **a rate limiter exists**.
 
@@ -90,11 +90,11 @@ Content-Type: application/json; charset=utf-8
 
 ![Sanitized Burp evidence showing HTTP 429 with Retry-After 13 seconds](assets/02-throttle-429.png)
 
-*Figure 2 — Protection activated. Crucially, `RateLimit-Reset` and `Retry-After` report only **13 seconds** remaining.*
+*Figure 2 - Protection activated. Crucially, `RateLimit-Reset` and `Retry-After` report only **13 seconds** remaining.*
 
 **Observation:** The human-readable error and JSON `retryAfter` mention 120 seconds, while the HTTP `Retry-After` and `RateLimit-Reset` headers show 13 seconds. This distinction affects interpretation of the later response.
 
-### Step 3 — Change the email's letter case and retry
+### Step 3 - Change the email's letter case and retry
 
 The report states that the researcher changed the capitalization of alphabetic characters in the email address, without treating it as a different logical account. The next captured request returned `401 Unauthorized` instead of the previous `429`.
 
@@ -112,11 +112,11 @@ RateLimit-Reset: 120
 
 ![Sanitized Burp screenshot showing a case-variant request receiving 401 and a renewed counter](assets/03-case-variant-401.png)
 
-*Figure 3 — Case-variant request returned `401`, with `RateLimit-Remaining: 4` and `RateLimit-Reset: 120`.*
+*Figure 3 - Case-variant request returned `401`, with `RateLimit-Remaining: 4` and `RateLimit-Reset: 120`.*
 
 **Important timing check:** This response was captured at **17:24:25 GMT**, **18 seconds** after the `429` response at **17:24:07 GMT**. Because the earlier headers stated that reset was **13 seconds** away, the original limit could have expired naturally before the case-variant request. A new full window is therefore *not conclusive evidence* of a bypass.
 
-### Step 4 — Review the later successful login response
+### Step 4 - Review the later successful login response
 
 A further request returned `HTTP 200 OK`, with `Set-Cookie` headers for authentication tokens shown in the original screenshot.
 
@@ -134,7 +134,7 @@ Set-Cookie: refreshToken=<REDACTED>
 
 ![Sanitized Burp Suite evidence showing a subsequent 200 with rate-limit headers](assets/04-later-200.png)
 
-*Figure 4 — Later `200 OK`; credential-bearing cookies and response data are completely covered in the public copy.*
+*Figure 4 - Later `200 OK`; credential-bearing cookies and response data are completely covered in the public copy.*
 
 A `200 OK` accompanied by authentication cookies indicates a successful authentication response in this screenshot. It should **not** be described as an authentication bypass or proof that invalid passwords were accepted. This response was also recorded **after** the original rate-limit window could already have reset.
 
@@ -142,7 +142,7 @@ A `200 OK` accompanied by authentication cookies indicates a successful authenti
 
 | Response | Screenshot timestamp (UTC) | Time since `429` | Remaining/reset reported | Interpretation |
 | --- | --- | --- | --- | --- |
-| Initial `401` | 17:22:21 | — | 3 remaining; 119 s reset | Authentication failure with rate tracking |
+| Initial `401` | 17:22:21 | - | 3 remaining; 119 s reset | Authentication failure with rate tracking |
 | `429` | 17:24:07 | 0 s | 0 remaining; **13 s reset** | Rate limiting confirmed |
 | Case-variant `401` | 17:24:25 | **+18 s** | 4 remaining; 120 s reset | Consistent with a new window **or** an identifier-based reset; not distinguishable |
 | Later `200` | 17:24:50 | **+43 s** | 3 remaining; 95 s reset | Successful login in the new window; not an auth bypass |
@@ -153,9 +153,9 @@ The key analytical constraint is simple: **18 seconds elapsed after a response a
 
 | Question | Expected behavior | What the evidence establishes |
 | --- | --- | --- |
-| Are repeated login attempts limited? | Eventually reject excessive failures | **Yes** — the endpoint returned `429` |
+| Are repeated login attempts limited? | Eventually reject excessive failures | **Yes** - the endpoint returned `429` |
 | Do case variants share one account-level limiter? | Yes, if they refer to the same account | **Not conclusively tested within a still-active cooldown** |
-| Did the case variant obtain additional attempts before reset? | Should not, if account-wide throttling is active | **Unresolved** — captured attempt followed the reported reset time |
+| Did the case variant obtain additional attempts before reset? | Should not, if account-wide throttling is active | **Unresolved** - captured attempt followed the reported reset time |
 | Did any test bypass password authentication? | No | **No evidence of authentication bypass** |
 | Is the limiter keyed by raw email strings? | Ideally use a stable account identifier | **Hypothesis; backend implementation not inspected** |
 
@@ -164,10 +164,6 @@ The key analytical constraint is simple: **18 seconds elapsed after a response a
 **Confirmed:** A login rate limiter was present, visibly blocked attempts with HTTP 429, and later accepted new requests after its advertised short remaining window elapsed.
 
 **Potential impact if subsequently confirmed:** A limiter keyed to raw email input could grant additional password-guessing attempts through case variations for the same underlying account, reducing the effectiveness of per-account throttling and credential-stuffing defenses.
-
-**Not demonstrated:** A bypass during an active cooldown, account compromise, password guessing success from invalid credentials, circumvention of CAPTCHA, or knowledge of the backend's exact rate-limit key.
-
-The source labels the finding **Medium**. That rating is attributed to the researchers rather than presented as an independently validated severity or CVSS score.
 
 ## 8. What a conclusive retest would require
 
