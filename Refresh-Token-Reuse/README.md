@@ -59,7 +59,7 @@ The original report's PoC text refers generally to a `refreshToken` parameter, w
 
 ## 4. Reproduction and observations
 
-### Step 1 — Authenticate and capture the issued tokens
+### Step 1 - Authenticate and capture the issued tokens
 
 Using an authorized test account, the researcher signed in and observed the application's login response.
 
@@ -67,9 +67,9 @@ Using an authorized test account, the researcher signed in and observed the appl
 
 ![Sanitized original Burp screenshot showing successful login and token cookies](assets/01-login-token-issuance.png)
 
-*Figure 1 — Initial login and credential issuance. Cookies, login fields, and challenge data have been redacted.*
+*Figure 1 - Initial login and credential issuance. Cookies, login fields, and challenge data have been redacted.*
 
-### Step 2 — Use the refresh token once
+### Step 2 - Use the refresh token once
 
 The captured refresh token was submitted to the refresh endpoint through the cookie header:
 
@@ -97,9 +97,9 @@ The first successful refresh response is recorded in the screenshot at **15:23:2
 
 ![Sanitized Burp screenshot showing initial refresh returning HTTP 200 and new token cookies](assets/02-initial-refresh-200.png)
 
-*Figure 2 — Initial refresh request accepted. The server returns `200 OK`, `success: true`, and fresh cookies.*
+*Figure 2 - Initial refresh request accepted. The server returns `200 OK`, `success: true`, and fresh cookies.*
 
-### Step 3 — Reuse the *previously consumed* refresh token
+### Step 3 - Reuse the *previously consumed* refresh token
 
 Instead of sending the newly issued `R1`, the researcher **replayed the earlier `R0` refresh token**.
 
@@ -116,11 +116,11 @@ Content-Type: application/json
 
 ![Sanitized Burp screenshot showing replayed refresh request accepted again with HTTP 200](assets/03-reused-refresh-token-200.png)
 
-*Figure 3 — A previous refresh token was accepted again, according to the original test sequence. Cookie values are fully redacted in this public version.*
+*Figure 3 - A previous refresh token was accepted again, according to the original test sequence. Cookie values are fully redacted in this public version.*
 
 **This is the central finding.** The source report states the same previously used refresh token was submitted unchanged. The public screenshots preserve the endpoint and response status while obscuring the actual credential values, so the exact token-byte equality cannot be independently checked from the sanitized files.
 
-### Step 4 — Check an older access token (separate observation)
+### Step 4 - Check an older access token (separate observation)
 
 The researcher then sent a request to a protected profile endpoint using an access token that had been issued before a newer access token:
 
@@ -134,7 +134,7 @@ Cookie: token=<REDACTED_OLDER_ACCESS_TOKEN>
 
 ![Sanitized Burp screenshot showing the profile API returning HTTP 200 for an older access token](assets/04-older-access-token-profile-200.png)
 
-*Figure 4 — The older access token accessed the protected profile. All personal data and document locations have been redacted.*
+*Figure 4 - The older access token accessed the protected profile. All personal data and document locations have been redacted.*
 
 **Important distinction:** Rotating a refresh token does **not**, by default, invalidate every previously issued access token. An older access token remaining valid **until its scheduled expiry** is normal in many JWT-based designs. This is a useful session-lifecycle observation but **not an independently proven weakness** without evidence that the access token should already have expired or been revoked.
 
@@ -142,10 +142,10 @@ Cookie: token=<REDACTED_OLDER_ACCESS_TOKEN>
 
 | Step | Evidence | Observed result |
 | --- | --- | --- |
-| Login | Figure 1 — `POST /api/auth/login` | Successful login; access and refresh cookies issued |
-| First refresh — 15:23:21 GMT | Figure 2 — `POST /api/auth/refresh` | `200 OK`; new token pair issued |
-| Reuse of earlier token — 15:24:19 GMT | Figure 3 — same endpoint | `200 OK`; another token pair issued |
-| Older access token — 15:37:29 GMT | Figure 4 — `GET /api/profile/full` | `200 OK`; authenticated profile data returned |
+| Login | Figure 1 - `POST /api/auth/login` | Successful login; access and refresh cookies issued |
+| First refresh - 15:23:21 GMT | Figure 2 - `POST /api/auth/refresh` | `200 OK`; new token pair issued |
+| Reuse of earlier token - 15:24:19 GMT | Figure 3 - same endpoint | `200 OK`; another token pair issued |
+| Older access token - 15:37:29 GMT | Figure 4 - `GET /api/profile/full` | `200 OK`; authenticated profile data returned |
 
 All times shown above are from the original Burp response headers on **10 August 2026**. Their role is to describe the recorded test, not the service's current behavior.
 
