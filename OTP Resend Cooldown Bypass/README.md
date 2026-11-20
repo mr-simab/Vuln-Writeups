@@ -28,17 +28,24 @@ The visual countdown is useful feedback, but it runs in a browser controlled by 
 
 ```mermaid
 sequenceDiagram
-    participant U as User interface
+    participant U as User Interface
     participant A as Recovery API
-    participant M as Email delivery
+    participant M as Email Service
+
     U->>A: Request initial OTP
-    A->>M: Send recovery email
-    A-->>U: Recovery response
-    Note over U: Resend button disabled; countdown active
-    Note over A: Expected: enforce cooldown independently
-    U-->>A: Direct requests can bypass UI controls
-    A-->>U: Successful responses observed in report
-    A->>M: Additional OTPs reported and pictured
+    A->>M: Send OTP email
+    M-->>U: OTP email delivered
+    A-->>U: Successful response
+
+    Note over U: Resend button disabled
+    Note over U: Countdown timer active
+
+    U->>A: Replay OTP request during cooldown
+    A-->>U: Successful response observed
+    A->>M: Additional OTP generated
+    M-->>U: Another OTP email delivered
+
+    Note over A: Server-side cooldown enforcement missing
 ```
 
 *Conceptual flow reconstructed from the report. It does not depict server internals that were directly inspected.*
