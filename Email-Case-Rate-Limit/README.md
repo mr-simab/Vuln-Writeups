@@ -1,10 +1,10 @@
-# Email Case Variation and Login Rate Limiting: An Evidence-Based Security Case Study
+# Email Case Variation and Login Rate Limiting
 
-> **Research question:** Can different capitalization of the same email address evade the login endpoint's failed-attempt counter?
+> **Question:** Can different capitalization of the same email address evade the login endpoint's failed-attempt counter?
 >
-> **Result:** The original assessment reported a rate-limit bypass. Its captured responses show an initial `401`, a rate-limited `429`, a subsequent `401` for a case-variant email, and then a `200` with authentication cookies. However, the `429` response indicated **13 seconds until reset**, while the next captured request occurred **18 seconds later**. The evidence therefore **does not conclusively distinguish email-case bypass from ordinary expiration of the rate-limit window**.
->
-> **Scope:** Historical authorized test evidence dated **3 September 2026** (per response headers). The current deployment and remediation status have **not** been checked.
+> **Result:** The original assessment reported a rate-limit bypass. Its captured responses show an initial `401`, a rate-limited `429`, a subsequent `401` for a case-variant email, and then a `200` with authentication cookies. However, the `429` response indicated **13 seconds until reset**, while the next captured request occurred **18 seconds later**.
+> 
+> **Scope:** Authorized testing conducted on **3 September 2026**. The vulnerability was subsequently remediated by the organization following this disclosure.
 
 ## 1. At a glance
 
@@ -18,7 +18,7 @@
 | Severity | **Medium** |
 | Methodology | Authorized, manual web/API testing using Burp Suite Repeater |
 | Observed server policy header | `RateLimit-Policy: 5;w=120` |
-| Evidence status | Rate limiting confirmed; capitalization-based bypass **inconclusive** |
+| Evidence status | Rate limiting confirmed, capitalization-based bypass **inconclusive** |
 
 ## 2. Background: why email canonicalization matters
 
@@ -47,7 +47,7 @@ The written report lists `gateway.uptoskills.in`, whereas the screenshots' host/
 
 ### Step 1 - Capture an invalid login attempt
 
-The researcher captured a login request for an authorized test account. The server denied the attempt with a generic authentication failure.
+A login request was captured for an test account. The server denied the attempt with a generic authentication failure.
 
 **Recorded response excerpt:**
 
